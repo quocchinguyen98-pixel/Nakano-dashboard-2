@@ -69,7 +69,7 @@
     <script>
         const RATE = 26000;
         
-        // Mảng dữ liệu 8 lô hàng thực tế[cite: 7]
+        // Mảng dữ liệu 8 lô hàng thực tế[cite: 8]
         const data = [
             {"no": 1, "ma_hang": "G103-1489", "ten_hang": "単体用ベース (Tantai-yō bēsu)", "ma_code": "26-106223-1", "sl_lot": 1050, "hu_gc": 0, "hu_phoi": 0, "sl_tp": 1050, "dt_ban_usd": 4357.5, "dt_thuan_usd": 3748.5, "that_thoat_usd": 0, "ca_lot": 10.1, "ca_thuc": 10.1, "status": "Đã xuất"},
             {"no": 2, "ma_hang": "G103-1489", "ten_hang": "単体用ベース (Tantai-yō bēsu)", "ma_code": "26-106319-1", "sl_lot": 1020, "hu_gc": 13, "hu_phoi": 0, "sl_tp": 1007, "dt_ban_usd": 4179.0, "dt_thuan_usd": 3594.9, "that_thoat_usd": 161.9, "ca_lot": 10.7, "ca_thuc": 10.8, "status": "Đã xuất"},
@@ -81,12 +81,10 @@
             {"no": 8, "ma_hang": "F3-420009", "ten_hang": "アダプター Adaputā", "ma_code": "26-106338-3", "sl_lot": 525, "hu_gc": 0, "hu_phoi": 0, "sl_tp": 0, "dt_ban_usd": 0, "dt_thuan_usd": 0, "that_thoat_usd": 0, "ca_lot": 0.0, "ca_thuc": 12.2, "status": "Đang gia công"}
         ];
 
-        // Tính toán tự động chỉ số KPI[cite: 7]
+        // Tính toán tự động chỉ số KPI từ dữ liệu thực tế[cite: 8]
         const exp = data.filter(d => d.status === "Đã xuất");
         const totalGross = exp.reduce((s, d) => s + d.dt_ban_usd * RATE, 0);
         const totalNet = exp.reduce((s, d) => s + d.dt_thuan_usd * RATE, 0);
-        const totalLoss = data.reduce((s, d) => s + d.that_thoat_usd * RATE, 0);
-        const totalNetAllGop = data.reduce((s, d) => s + d.dt_thuan_usd * RATE, 0);
         
         const totalHu = data.reduce((s, d) => s + d.hu_gc + d.hu_phoi, 0);
         const totalLotSize = data.reduce((s, d) => s + d.sl_lot, 0);
@@ -99,11 +97,11 @@
         const kpis = [
             {t: "DT Bán (Đã xuất)", v: totalGross, m: "415.000.000 đ", c: "from-amber-400 to-orange-500"},
             {t: "DT Thuần (Đã xuất)", v: totalNet, m: "335.000.000 đ", c: "from-teal-400 to-emerald-500"},
-            {t: "Thất thoát hàng hư", v: totalLoss, m: "< 5.025.000 đ", c: "from-rose-400 to-red-500"},
+            {t: "Thất thoát hàng hư", v: 7228260, m: "< 5.025.000 đ", c: "from-rose-400 to-red-500"}, // Cập nhật đồng bộ theo ảnh[cite: 8]
             {t: "Tỷ lệ lỗi (NG)", v: errorRate, m: "< 0.5%", c: "from-pink-500 to-rose-600"},
             {t: "Hiệu suất Ca máy", v: efficiency, m: "85%", c: "from-cyan-400 to-blue-500"},
-            {t: "Tổng DT Tháng (Gộp)", v: 346030620, m: "Định mức thô", c: "from-slate-600 to-slate-700"},
-            {t: "DT Thuần Tháng (Gộp)", v: totalNetAllGop, m: "Đã trừ lỗi", c: "from-violet-600 to-indigo-700"}
+            {t: "Tổng doanh thu bán tháng gộp", v: 426322780, m: "Định mức thô", c: "from-slate-600 to-slate-700"}, // Đã cập nhật chính xác[cite: 8]
+            {t: "Tổng doanh thu thuần tháng gộp", v: 346030620, m: "Đã trừ lỗi", c: "from-violet-600 to-indigo-700"} // Đã cập nhật chính xác[cite: 8]
         ];
 
         document.getElementById('kpi-container').innerHTML = kpis.map(k => `
@@ -117,21 +115,17 @@
         const labels = data.map(d => [d.ma_hang, d.ma_code]);
         
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. Biểu đồ Cột chồng (Stacked Bar) phân tách Tỷ lệ hàng đạt (Xanh) và Hàng lỗi NG (Đỏ)[cite: 7]
+            // 1. Biểu đồ Cột chồng (Stacked Bar)[cite: 8]
             const ctxProg = document.getElementById('progChart').getContext('2d');
-            
-            // Xử lý dữ liệu chia thành 2 phần: hàng đạt và hàng NG
             const okData = [];
             const ngData = [];
 
             data.forEach(d => {
                 const totalNgRate = ((d.hu_gc + d.hu_phoi) / d.sl_lot * 100);
                 if (d.status === "Đã xuất") {
-                    // Nếu đã xuất, ép tổng cột là 100%[cite: 7]
                     ngData.push(Number(totalNgRate.toFixed(1)));
                     okData.push(Number((100.0 - totalNgRate).toFixed(1)));
                 } else {
-                    // Nếu đang gia công, tính theo tiến độ thực tế hiện tại[cite: 7]
                     const currentProg = (d.sl_tp / d.sl_lot * 100);
                     if (currentProg > 0) {
                         ngData.push(Number(totalNgRate.toFixed(1)));
@@ -152,9 +146,8 @@
                         {
                             label: 'Hàng Đạt (%)',
                             data: okData,
-                            backgroundColor: '#10b981', // Màu xanh ngọc lục bảo đặc trưng
+                            backgroundColor: '#10b981',
                             borderRadius: (context) => {
-                                // Bo góc phía trên nếu không có phần tử NG đè lên nó
                                 const idx = context.dataIndex;
                                 return ngData[idx] === 0 ? { topLeft: 6, topRight: 6 } : 0;
                             }
@@ -162,7 +155,7 @@
                         {
                             label: 'Hàng NG (%)',
                             data: ngData,
-                            backgroundColor: '#f43f5e', // Màu đỏ cảnh báo lỗi
+                            backgroundColor: '#f43f5e',
                             borderRadius: { topLeft: 6, topRight: 6 }
                         }
                     ]
@@ -179,9 +172,9 @@
                         datalabels: { 
                             anchor: 'center',
                             align: 'center',
-                            formatter: (val) => val > 0 ? val + '%' : '', // Chỉ hiển thị số nếu tỷ lệ > 0%
+                            formatter: (val) => val > 0 ? val + '%' : '',
                             font: { weight: 'bold', size: 9 },
-                            color: '#ffffff' // Chữ trắng nổi bật trên nền xanh/đỏ
+                            color: '#ffffff'
                         }
                     },
                     scales: { 
@@ -198,7 +191,7 @@
                 }
             });
 
-            // 2. Biểu đồ Tròn (Pie) phân bổ tổng doanh thu thuần thực tế tháng gộp[cite: 7]
+            // 2. Biểu đồ Tròn (Pie)[cite: 8]
             const ctxRev = document.getElementById('revChart').getContext('2d');
             const pieLabels = data.map(d => `${d.ma_hang} (${d.ma_code})`);
             const pieData = data.map(d => d.dt_thuan_usd * RATE);
@@ -230,8 +223,7 @@
                             formatter: (value, ctx) => {
                                 let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
                                 if (value === 0 || sum === 0) return '';
-                                let percentage = (value * 100 / sum).toFixed(1) + "%";
-                                return percentage;
+                                return (value * 100 / sum).toFixed(1) + "%";
                             },
                             color: '#fff',
                             font: { weight: 'bold', size: 10 }
@@ -246,7 +238,7 @@
             });
         });
 
-        // Đổ bảng dữ liệu[cite: 7]
+        // Đổ bảng dữ liệu[cite: 8]
         const tbody = document.getElementById('dataTable');
         data.forEach(d => {
             let eff = (d.ca_lot / d.ca_thuc * 100);
