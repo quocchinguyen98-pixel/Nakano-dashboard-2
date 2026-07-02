@@ -34,19 +34,19 @@
         </header>
 
         <!-- KPI Grid -->
-        <div id="kpi-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-10"></div>
+        <div id="kpi-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-10"></div>
 
         <!-- Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                 <h3 class="font-bold text-slate-700 mb-6 uppercase text-[11px] tracking-[0.2em]">Tiến độ sản xuất theo lô (%)</h3>
-                <div class="h-[280px] relative w-full">
+                <div class="h-[320px] relative w-full">
                     <canvas id="progChart"></canvas>
                 </div>
             </div>
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-                <h3 class="font-bold text-slate-700 mb-6 uppercase text-[11px] tracking-[0.2em]">Doanh thu thuần thực tế (VND)</h3>
-                <div class="h-[280px] relative w-full">
+                <h3 class="font-bold text-slate-700 mb-6 uppercase text-[11px] tracking-[0.2em]">Tỷ trọng phân bố DT thuần thực tế (%)</h3>
+                <div class="h-[320px] relative w-full flex justify-center">
                     <canvas id="revChart"></canvas>
                 </div>
             </div>
@@ -69,7 +69,7 @@
     <script>
         const RATE = 26000;
         
-        // Mảng dữ liệu 8 lô hàng thực tế
+        // Mảng dữ liệu 8 lô hàng thực tế[cite: 7]
         const data = [
             {"no": 1, "ma_hang": "G103-1489", "ten_hang": "単体用ベース (Tantai-yō bēsu)", "ma_code": "26-106223-1", "sl_lot": 1050, "hu_gc": 0, "hu_phoi": 0, "sl_tp": 1050, "dt_ban_usd": 4357.5, "dt_thuan_usd": 3748.5, "that_thoat_usd": 0, "ca_lot": 10.1, "ca_thuc": 10.1, "status": "Đã xuất"},
             {"no": 2, "ma_hang": "G103-1489", "ten_hang": "単体用ベース (Tantai-yō bēsu)", "ma_code": "26-106319-1", "sl_lot": 1020, "hu_gc": 13, "hu_phoi": 0, "sl_tp": 1007, "dt_ban_usd": 4179.0, "dt_thuan_usd": 3594.9, "that_thoat_usd": 161.9, "ca_lot": 10.7, "ca_thuc": 10.8, "status": "Đã xuất"},
@@ -81,11 +81,12 @@
             {"no": 8, "ma_hang": "F3-420009", "ten_hang": "アダプター Adaputā", "ma_code": "26-106338-3", "sl_lot": 525, "hu_gc": 0, "hu_phoi": 0, "sl_tp": 0, "dt_ban_usd": 0, "dt_thuan_usd": 0, "that_thoat_usd": 0, "ca_lot": 0.0, "ca_thuc": 12.2, "status": "Đang gia công"}
         ];
 
-        // Tính toán tự động chỉ số KPI
+        // Tính toán tự động chỉ số KPI[cite: 7]
         const exp = data.filter(d => d.status === "Đã xuất");
         const totalGross = exp.reduce((s, d) => s + d.dt_ban_usd * RATE, 0);
         const totalNet = exp.reduce((s, d) => s + d.dt_thuan_usd * RATE, 0);
         const totalLoss = data.reduce((s, d) => s + d.that_thoat_usd * RATE, 0);
+        const totalNetAllGop = data.reduce((s, d) => s + d.dt_thuan_usd * RATE, 0);
         
         const totalHu = data.reduce((s, d) => s + d.hu_gc + d.hu_phoi, 0);
         const totalLotSize = data.reduce((s, d) => s + d.sl_lot, 0);
@@ -101,106 +102,151 @@
             {t: "Thất thoát hàng hư", v: totalLoss, m: "< 5.025.000 đ", c: "from-rose-400 to-red-500"},
             {t: "Tỷ lệ lỗi (NG)", v: errorRate, m: "< 0.5%", c: "from-pink-500 to-rose-600"},
             {t: "Hiệu suất Ca máy", v: efficiency, m: "85%", c: "from-cyan-400 to-blue-500"},
-            {t: "Tổng DT Tháng (Gộp)", v: 346030620, m: "Mục tiêu định mức", c: "from-violet-600 to-indigo-700"}
+            {t: "Tổng DT Tháng (Gộp)", v: 346030620, m: "Định mức thô", c: "from-slate-600 to-slate-700"},
+            {t: "DT Thuần Tháng (Gộp)", v: totalNetAllGop, m: "Đã trừ lỗi", c: "from-violet-600 to-indigo-700"}
         ];
 
         document.getElementById('kpi-container').innerHTML = kpis.map(k => `
-            <div class="bg-gradient-to-br ${k.c} p-5 rounded-3xl text-white shadow-lg border border-white/10">
-                <p class="text-[9px] font-bold opacity-80 uppercase tracking-widest">${k.t}</p>
-                <p class="text-xl font-black my-2">${typeof k.v === 'number' ? k.v.toLocaleString('vi-VN') + ' đ' : k.v}</p>
-                <div class="inline-block px-2 py-0.5 bg-white/20 rounded-md text-[9px] font-bold">Mục tiêu: ${k.m}</div>
+            <div class="bg-gradient-to-br ${k.c} p-4 rounded-2xl text-white shadow-lg border border-white/10">
+                <p class="text-[9px] font-bold opacity-80 uppercase tracking-widest leading-tight">${k.t}</p>
+                <p class="text-base font-black my-1.5">${typeof k.v === 'number' ? k.v.toLocaleString('vi-VN') + ' đ' : k.v}</p>
+                <div class="inline-block px-1.5 py-0.5 bg-white/20 rounded text-[9px] font-bold">Mục tiêu: ${k.m}</div>
             </div>
         `).join('');
 
         const labels = data.map(d => [d.ma_hang, d.ma_code]);
         
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. Biểu đồ cột Tiến độ hoàn thành (%)
+            // 1. Biểu đồ Cột chồng (Stacked Bar) phân tách Tỷ lệ hàng đạt (Xanh) và Hàng lỗi NG (Đỏ)[cite: 7]
             const ctxProg = document.getElementById('progChart').getContext('2d');
+            
+            // Xử lý dữ liệu chia thành 2 phần: hàng đạt và hàng NG
+            const okData = [];
+            const ngData = [];
+
+            data.forEach(d => {
+                const totalNgRate = ((d.hu_gc + d.hu_phoi) / d.sl_lot * 100);
+                if (d.status === "Đã xuất") {
+                    // Nếu đã xuất, ép tổng cột là 100%[cite: 7]
+                    ngData.push(Number(totalNgRate.toFixed(1)));
+                    okData.push(Number((100.0 - totalNgRate).toFixed(1)));
+                } else {
+                    // Nếu đang gia công, tính theo tiến độ thực tế hiện tại[cite: 7]
+                    const currentProg = (d.sl_tp / d.sl_lot * 100);
+                    if (currentProg > 0) {
+                        ngData.push(Number(totalNgRate.toFixed(1)));
+                        okData.push(Number((currentProg - totalNgRate).toFixed(1)));
+                    } else {
+                        okData.push(0);
+                        ngData.push(0);
+                    }
+                }
+            });
+
             new Chart(ctxProg, {
                 type: 'bar',
                 plugins: [ChartDataLabels],
                 data: { 
                     labels: labels, 
-                    datasets: [{
-                        label: 'Tiến độ hoàn thành (%)',
-                        data: data.map(d => (d.sl_tp / d.sl_lot * 100).toFixed(1)),
-                        backgroundColor: (context) => {
-                            const chart = context.chart;
-                            const {ctx, chartArea} = chart;
-                            if (!chartArea) return '#06b6d4';
-                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                            gradient.addColorStop(0, '#10b981');
-                            gradient.addColorStop(1, '#06b6d4');
-                            return gradient;
+                    datasets: [
+                        {
+                            label: 'Hàng Đạt (%)',
+                            data: okData,
+                            backgroundColor: '#10b981', // Màu xanh ngọc lục bảo đặc trưng
+                            borderRadius: (context) => {
+                                // Bo góc phía trên nếu không có phần tử NG đè lên nó
+                                const idx = context.dataIndex;
+                                return ngData[idx] === 0 ? { topLeft: 6, topRight: 6 } : 0;
+                            }
                         },
-                        borderRadius: 6
-                    }]
+                        {
+                            label: 'Hàng NG (%)',
+                            data: ngData,
+                            backgroundColor: '#f43f5e', // Màu đỏ cảnh báo lỗi
+                            borderRadius: { topLeft: 6, topRight: 6 }
+                        }
+                    ]
                 },
                 options: { 
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { 
-                        datalabels: { 
-                            anchor: 'end', 
-                            align: 'top', 
-                            formatter: (val) => val + '%',
-                            font: { weight: 'bold', size: 9 },
-                            color: '#475569'
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { boxWidth: 12, font: { size: 10 } }
                         },
-                        legend: { display: false }
+                        datalabels: { 
+                            anchor: 'center',
+                            align: 'center',
+                            formatter: (val) => val > 0 ? val + '%' : '', // Chỉ hiển thị số nếu tỷ lệ > 0%
+                            font: { weight: 'bold', size: 9 },
+                            color: '#ffffff' // Chữ trắng nổi bật trên nền xanh/đỏ
+                        }
                     },
                     scales: { 
-                        y: { max: 120, ticks: { callback: (val) => val + '%' } },
-                        x: { ticks: { font: { size: 9 } } }
+                        y: { 
+                            stacked: true,
+                            max: 120, 
+                            ticks: { callback: (val) => val + '%' } 
+                        },
+                        x: { 
+                            stacked: true,
+                            ticks: { font: { size: 9 } } 
+                        }
                     }
                 }
             });
 
-            // 2. Biểu đồ đường Doanh thu thực tế (VND)
+            // 2. Biểu đồ Tròn (Pie) phân bổ tổng doanh thu thuần thực tế tháng gộp[cite: 7]
             const ctxRev = document.getElementById('revChart').getContext('2d');
+            const pieLabels = data.map(d => `${d.ma_hang} (${d.ma_code})`);
+            const pieData = data.map(d => d.dt_thuan_usd * RATE);
+
             new Chart(ctxRev, {
-                type: 'line',
+                type: 'pie',
+                plugins: [ChartDataLabels],
                 data: { 
-                    labels: labels, 
+                    labels: pieLabels, 
                     datasets: [{
-                        label: 'Doanh thu thực tế (VND)',
-                        data: data.map(d => d.status === "Đã xuất" ? d.dt_thuan_usd * RATE : 0),
-                        borderColor: '#f43f5e',
-                        borderWidth: 3,
-                        fill: true,
-                        backgroundColor: (context) => {
-                            const chart = context.chart;
-                            const {ctx, chartArea} = chart;
-                            if (!chartArea) return 'rgba(244, 63, 94, 0.1)';
-                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                            gradient.addColorStop(0, 'rgba(244, 63, 94, 0.25)');
-                            gradient.addColorStop(1, 'rgba(244, 63, 94, 0)');
-                            return gradient;
-                        },
-                        tension: 0.35,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#f43f5e'
+                        data: pieData,
+                        backgroundColor: [
+                            '#4f46e5', '#06b6d4', '#10b981', '#f59e0b', 
+                            '#ec4899', '#64748b', '#94a3b8', '#cbd5e1'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        legend: { 
+                            position: 'right',
+                            labels: { boxWidth: 12, font: { size: 9 } }
+                        },
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                if (value === 0 || sum === 0) return '';
+                                let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return percentage;
+                            },
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 }
+                        },
                         tooltip: {
-                            callbacks: { label: (ctx) => ' Doanh thu: ' + ctx.raw.toLocaleString('vi-VN') + ' đ' }
+                            callbacks: {
+                                label: (ctx) => ` Doanh thu: ${ctx.raw.toLocaleString('vi-VN')} đ`
+                            }
                         }
-                    },
-                    scales: {
-                        x: { ticks: { font: { size: 9 } } },
-                        y: { ticks: { font: { size: 10 } } }
                     }
                 }
             });
         });
 
-        // Đổ bảng dữ liệu
+        // Đổ bảng dữ liệu[cite: 7]
         const tbody = document.getElementById('dataTable');
         data.forEach(d => {
             let eff = (d.ca_lot / d.ca_thuc * 100);
@@ -215,7 +261,7 @@
                 <td class="p-4 text-rose-500">${d.hu_gc}</td>
                 <td class="p-4 text-amber-500">${d.hu_phoi}</td>
                 <td class="p-4 font-semibold text-emerald-600">${d.sl_tp}</td>
-                <td class="p-4 font-bold text-slate-900">${d.status === 'Đã xuất' ? (d.dt_thuan_usd * RATE).toLocaleString('vi-VN') + ' đ' : '<span class="text-slate-400 font-normal italic">Chờ xuất</span>'}</td>
+                <td class="p-4 font-bold text-slate-900">${d.dt_thuan_usd > 0 ? (d.dt_thuan_usd * RATE).toLocaleString('vi-VN') + ' đ' : '<span class="text-slate-400 font-normal italic">Chờ xuất</span>'}</td>
                 <td class="p-4">${((d.hu_gc + d.hu_phoi) / d.sl_lot * 100).toFixed(2)}%</td>
                 <td class="p-4 ${eff < 80 && d.status === 'Đã xuất' ? 'text-red-500 font-extrabold bg-red-50/50' : 'text-slate-700'}">${eff.toFixed(1)}%</td>
                 <td class="p-4">
